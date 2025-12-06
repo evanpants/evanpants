@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { analyzeProperty } from './services/geminiService';
 import { PropertyData, FinancialParams } from './types';
 import { Dashboard } from './components/Dashboard';
@@ -11,12 +11,39 @@ const DEFAULT_PARAMS: FinancialParams = {
 };
 
 function App() {
+  const [apiKey, setApiKey] = useState<string>('');
+  const [isKeyEntered, setIsKeyEntered] = useState(false);
+
   const [address, setAddress] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
   const [propertyData, setPropertyData] = useState<PropertyData | null>(null);
   const [financialParams, setFinancialParams] = useState<FinancialParams>(DEFAULT_PARAMS);
+
+  useEffect(() => {
+    const storedKey = localStorage.getItem('gemini_api_key');
+    if (storedKey) {
+      setApiKey(storedKey);
+      setIsKeyEntered(true);
+    }
+  }, []);
+
+  const handleKeySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (apiKey.trim().length > 10) {
+      localStorage.setItem('gemini_api_key', apiKey.trim());
+      setIsKeyEntered(true);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('gemini_api_key');
+    setApiKey('');
+    setIsKeyEntered(false);
+    setPropertyData(null);
+    setHasSearched(false);
+  };
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,15 +54,58 @@ function App() {
     setHasSearched(true);
 
     try {
-      const data = await analyzeProperty(address);
+      const data = await analyzeProperty(address, apiKey);
       setPropertyData(data);
     } catch (err) {
-      setError("We couldn't analyze that property. Please check the address or try again later. Ensure you have a valid API Key.");
+      setError("We couldn't analyze that property. Please check the address, your API Key, or try again later.");
       setHasSearched(false);
     } finally {
       setLoading(false);
     }
   };
+
+  if (!isKeyEntered) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
+        <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full border border-gray-100">
+           <div className="text-center mb-6">
+              <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-brand-600 to-brand-900">
+                CapRate AI
+              </h1>
+              <p className="text-gray-500 mt-2 text-sm">Enter your Gemini API Key to access the tool.</p>
+           </div>
+           
+           <form onSubmit={handleKeySubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1 uppercase">API Key</label>
+                <input 
+                  type="password" 
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  placeholder="AIzaSy..."
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand-500 focus:outline-none transition-shadow bg-gray-50"
+                  required
+                />
+              </div>
+              <button 
+                type="submit" 
+                className="w-full bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors"
+              >
+                Access App
+              </button>
+           </form>
+           <p className="text-xs text-gray-400 mt-4 text-center">
+             Your key is stored locally in your browser and sent directly to Google. It is never saved to our servers.
+           </p>
+            <div className="mt-4 text-center">
+             <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-xs text-brand-600 hover:underline">
+               Get a free Gemini API Key here
+             </a>
+           </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 text-gray-800 font-sans">
@@ -45,11 +115,15 @@ function App() {
           
           <div className={`${hasSearched ? 'flex items-center gap-6 flex-1' : 'w-full'}`}>
              {/* Logo / Title */}
-             <div className={`${hasSearched ? 'shrink-0' : 'mb-8'}`}>
-               <h1 className={`${hasSearched ? 'text-xl' : 'text-5xl'} font-bold bg-clip-text text-transparent bg-gradient-to-r from-brand-600 to-brand-900`}>
+             <div className={`${hasSearched ? 'shrink-0' : 'mb-8'} relative group`}>
+               <h1 className={`${hasSearched ? 'text-xl' : 'text-5xl'} font-bold bg-clip-text text-transparent bg-gradient-to-r from-brand-600 to-brand-900 cursor-default`}>
                  CapRate AI
                </h1>
                {!hasSearched && <p className="mt-4 text-gray-500 text-lg">Instant rental yield analysis powered by Gemini.</p>}
+               {/* Logout hidden button */}
+               <button onClick={handleLogout} className="absolute -top-4 -left-4 text-xs text-gray-300 hover:text-red-500 p-2">
+                 Reset Key
+               </button>
              </div>
 
              {/* Search Form */}

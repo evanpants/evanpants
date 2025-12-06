@@ -1,10 +1,9 @@
 import { GoogleGenAI } from "@google/genai";
-import { PropertyData, CompListing } from '../types';
+import { PropertyData } from '../types';
 
-const getClient = () => {
-  const apiKey = process.env.API_KEY;
+const getClient = (apiKey: string) => {
   if (!apiKey) {
-    throw new Error("API Key is missing. Please set process.env.API_KEY.");
+    throw new Error("API Key is provided.");
   }
   return new GoogleGenAI({ apiKey });
 };
@@ -38,8 +37,8 @@ const extractJSON = (text: string): any => {
   }
 };
 
-export const analyzeProperty = async (address: string): Promise<PropertyData> => {
-  const ai = getClient();
+export const analyzeProperty = async (address: string, apiKey: string): Promise<PropertyData> => {
+  const ai = getClient(apiKey);
 
   const prompt = `
     I need a real estate investment analysis for the property at: "${address}".
