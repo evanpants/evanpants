@@ -1,0 +1,5 @@
+{
+  "name": "CapRate AI",
+  "description": "An intelligent real estate investment calculator that uses AI to estimate property details, rental comps, and expenses to calculate Cap Rate and Cash-on-Cash returns.",
+  "requestFramePermissions": []
+}
