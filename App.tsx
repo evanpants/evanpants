@@ -11,6 +11,72 @@ const DEFAULT_PARAMS: FinancialParams = {
   closingCostsPercent: 2,
 };
 
+// --- Deploy Modal Component ---
+const DeployModal = ({ onClose }: { onClose: () => void }) => {
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 print:hidden">
+      <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-fade-in-up">
+        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-xl">
+          <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+            <svg className="w-6 h-6 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+            How to Publish this App
+          </h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
+        </div>
+        
+        <div className="p-8 space-y-6">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-blue-800 text-sm">
+            <strong>Why do I need to do this?</strong>
+            <p className="mt-1">This app is currently running in a temporary AI sandbox. To verify the API connection and share it with friends, you need to host it on a public server. <strong>GitHub Pages is free and takes ~2 minutes.</strong></p>
+          </div>
+
+          <ol className="list-decimal list-inside space-y-4 text-gray-700">
+            <li className="pl-2">
+              <span className="font-bold text-gray-900">Download/Save the Code</span>
+              <p className="ml-5 text-sm text-gray-500 mt-1">Ensure you have all the files (App.tsx, index.html, services, etc.) saved in a folder on your computer.</p>
+            </li>
+            <li className="pl-2">
+              <span className="font-bold text-gray-900">Create a GitHub Repository</span>
+              <p className="ml-5 text-sm text-gray-500 mt-1">Go to <a href="https://github.com/new" target="_blank" className="text-brand-600 hover:underline">github.com/new</a> and create a public repository (e.g., named <code>caprate-ai</code>).</p>
+            </li>
+            <li className="pl-2">
+              <span className="font-bold text-gray-900">Upload Files</span>
+              <p className="ml-5 text-sm text-gray-500 mt-1">Click "Upload files" in your new repo and drag all your project files into it. Commit the changes.</p>
+            </li>
+            <li className="pl-2">
+              <span className="font-bold text-gray-900">Enable GitHub Pages</span>
+              <ul className="ml-5 text-sm text-gray-500 mt-1 list-disc list-inside">
+                <li>Go to <strong>Settings</strong> {'>'} <strong>Pages</strong>.</li>
+                <li>Under "Build and deployment", set <strong>Source</strong> to "Deploy from a branch".</li>
+                <li>Set <strong>Branch</strong> to <code>main</code> (or master) and folder to <code>/ (root)</code>.</li>
+                <li>Click <strong>Save</strong>.</li>
+              </ul>
+            </li>
+          </ol>
+
+          <div className="mt-6 pt-6 border-t border-gray-100 text-center">
+            <p className="text-sm text-gray-600 mb-2">After about 1 minute, your app will be live at:</p>
+            <code className="bg-gray-100 px-3 py-2 rounded text-brand-600 font-mono">
+              https://[your-username].github.io/[repo-name]
+            </code>
+          </div>
+        </div>
+
+        <div className="p-6 bg-gray-50 rounded-b-xl flex justify-end">
+          <button 
+            onClick={onClose}
+            className="px-6 py-2 bg-gray-900 hover:bg-black text-white rounded-lg font-medium transition-colors"
+          >
+            Got it
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 function App() {
   const [apiKey, setApiKey] = useState<string>('');
   const [isKeyEntered, setIsKeyEntered] = useState(false);
@@ -23,7 +89,9 @@ function App() {
   const [history, setHistory] = useState<SavedAnalysis[]>([]);
   const [sharedView, setSharedView] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+  const [appShareState, setAppShareState] = useState<'idle' | 'copied' | 'private'>('idle');
   const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [showDeployModal, setShowDeployModal] = useState(false);
 
   // Load API Key, History, and Check URL for Shared Data on Mount
   useEffect(() => {
@@ -131,7 +199,7 @@ function App() {
     }
   };
 
-  const handleBack = () => {
+  const handleNewSearch = () => {
     setPropertyData(null);
     setAddress('');
     setError(null);
@@ -199,12 +267,18 @@ function App() {
     }, 500);
   };
 
-  const handleShare = () => {
+  const handleShareResult = () => {
     if (!propertyData) return;
 
-    // Create a compact object for the URL
+    // Create a LIGHTWEIGHT object for the URL to avoid length limits
+    // We strip out the comps array because it is heavy and causes broken links
+    const lightweightProperty = {
+      ...propertyData,
+      comps: [] // Exclude comps from shared URL to save space
+    };
+
     const shareObj = {
-      property: propertyData,
+      property: lightweightProperty,
       params: financialParams
     };
 
@@ -216,6 +290,21 @@ function App() {
       setTimeout(() => setShareCopied(false), 2000);
     });
   };
+  
+  const handleShareApp = () => {
+     // Check if we are in a sandbox
+     if (window.location.hostname.includes('googleusercontent.com')) {
+       setAppShareState('private');
+       setTimeout(() => setAppShareState('idle'), 4000);
+       return;
+     }
+
+     const url = window.location.origin + window.location.pathname;
+     navigator.clipboard.writeText(url).then(() => {
+      setAppShareState('copied');
+      setTimeout(() => setAppShareState('idle'), 2000);
+    });
+  };
 
   // ------------------------------------------------------------------
   // RENDER: API Key Entry (Gatekeeper)
@@ -224,8 +313,19 @@ function App() {
   if (!isKeyEntered && !sharedView) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
-        <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full border border-gray-100">
-           <div className="text-center mb-6">
+        {showDeployModal && <DeployModal onClose={() => setShowDeployModal(false)} />}
+        
+        <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full border border-gray-100 relative">
+           {/* Top Right Help */}
+           <button 
+            onClick={() => setShowDeployModal(true)}
+            className="absolute top-4 right-4 text-xs font-medium text-gray-400 hover:text-brand-600 flex items-center gap-1"
+           >
+             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+             Deploy
+           </button>
+
+           <div className="text-center mb-6 mt-2">
               <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-brand-600 to-brand-900">
                 CapRate AI
               </h1>
@@ -270,15 +370,17 @@ function App() {
   if (propertyData) {
     return (
       <div className="min-h-screen bg-slate-50 text-gray-800 font-sans print:bg-white">
+        {showDeployModal && <DeployModal onClose={() => setShowDeployModal(false)} />}
+        
         <header className="bg-white border-b py-4 shadow-sm sticky top-0 z-30 print:hidden no-print">
           <div className="container mx-auto px-4 flex items-center justify-between">
             <div className="flex items-center gap-4">
                <button 
-                onClick={handleBack}
+                onClick={handleNewSearch}
                 className="flex items-center text-gray-500 hover:text-brand-600 transition-colors"
                >
                  <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                 Back
+                 New Search
                </button>
                <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-brand-600 to-brand-900 cursor-default">
                  CapRate AI
@@ -286,9 +388,16 @@ function App() {
             </div>
             
             <div className="flex gap-2">
+               <button 
+                  onClick={() => setShowDeployModal(true)}
+                  className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+               >
+                  Deploy
+               </button>
+
                {/* Share Button */}
                <button 
-                 onClick={handleShare}
+                 onClick={handleShareResult}
                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-brand-700 bg-brand-50 hover:bg-brand-100 rounded-lg transition-colors border border-brand-200"
                >
                  {shareCopied ? (
@@ -299,7 +408,7 @@ function App() {
                  ) : (
                     <>
                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
-                       Share
+                       Share Result
                     </>
                  )}
                </button>
@@ -350,7 +459,7 @@ function App() {
                <div className="bg-blue-50 border border-blue-200 p-3 mb-6 rounded text-center no-print">
                   <p className="text-sm text-blue-800">
                     You are viewing a <strong>shared analysis</strong>. 
-                    {!isKeyEntered && <span className="ml-1">To run your own search, please <button onClick={handleBack} className="underline font-bold">enter an API Key</button>.</span>}
+                    {!isKeyEntered && <span className="ml-1">To run your own search, please <button onClick={handleNewSearch} className="underline font-bold">enter an API Key</button>.</span>}
                   </p>
                </div>
             )}
@@ -380,14 +489,57 @@ function App() {
   // ------------------------------------------------------------------
   return (
     <div className="min-h-screen bg-slate-50 text-gray-800 font-sans flex flex-col items-center pt-20 px-4">
+      {showDeployModal && <DeployModal onClose={() => setShowDeployModal(false)} />}
+
+      {/* Top Right Controls */}
+      <div className="absolute top-4 right-4 flex flex-col items-end gap-2">
+         <button onClick={() => setShowDeployModal(true)} className="text-xs font-bold text-brand-600 hover:text-brand-800 flex items-center gap-1 mb-1">
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+            Deploy to GitHub
+         </button>
+        <button onClick={handleLogout} className="text-xs text-gray-300 hover:text-red-500 transition-colors">
+          Logout / Clear Key
+        </button>
+      </div>
+
       <div className="w-full max-w-2xl text-center mb-8 relative group">
         <h1 className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-brand-600 to-brand-900 cursor-default mb-4">
           CapRate AI
         </h1>
         <p className="text-gray-500 text-lg">Instant rental yield analysis powered by Gemini.</p>
-        <button onClick={handleLogout} className="absolute top-0 right-0 text-xs text-gray-300 hover:text-red-500 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          Logout / Clear Key
-        </button>
+        
+        {/* Share App Action */}
+        <div className="mt-4 flex justify-center">
+          <div className="relative">
+            <button 
+              onClick={handleShareApp}
+              className="text-sm text-brand-600 font-medium hover:text-brand-800 flex items-center gap-1 transition-colors px-3 py-1.5 rounded-full hover:bg-brand-50"
+            >
+              {appShareState === 'copied' ? (
+                <>
+                  <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                  <span>Link Copied</span>
+                </>
+              ) : appShareState === 'private' ? (
+                 <>
+                  <svg className="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                  <span>Private Sandbox Link</span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                  <span>Share App Link</span>
+                </>
+              )}
+            </button>
+            {/* Warning popover for private link */}
+            {appShareState === 'private' && (
+              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-64 p-3 bg-amber-50 border border-amber-200 rounded-lg shadow-lg text-xs text-amber-800 z-50 animate-fade-in-up">
+                <p><strong>Note:</strong> You are currently in a private preview. To share this app with friends, you must first publish the code (e.g., to GitHub Pages).</p>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="w-full max-w-xl mb-12">
