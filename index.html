@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CapRate AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -45,6 +47,21 @@
       }
       ::-webkit-scrollbar-thumb:hover {
         background: #94a3b8;
+      }
+
+      /* PRINT STYLES */
+      @media print {
+        @page { margin: 0.5cm; size: portrait; }
+        body { 
+          background-color: white; 
+          -webkit-print-color-adjust: exact; 
+          print-color-adjust: exact; 
+        }
+        
+        /* Ensure all content is visible and not scrollable */
+        * { overflow: visible !important; }
+        
+        .no-print { display: none !important; }
       }
     </style>
   <script type="importmap">

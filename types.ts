@@ -43,3 +43,11 @@ export interface CalculationResult {
   cashOnCashReturn: number; // Percentage
   totalInitialInvestment: number;
 }
+
+export interface SavedAnalysis {
+  id: string;
+  timestamp: number;
+  address: string;
+  property: PropertyData;
+  params: FinancialParams;
+}
